@@ -2593,7 +2593,7 @@ class Application(tk.Frame):
     self.update()
 
   def downloadLatestFirmware(self):
-    version = 'beta' if self.firmware_type.get() == 1 else 'release'
+    version = 'release' if self.firmware_type.get() == 1 else 'beta'
     print("Downloading "+str(version)+" version of firmware since firmware_type was "+str(self.firmware_type.get()))
     self.downloadFile(version, "bootloader.bin")
     self.downloadFile(version, "partitions_toky.bin")
@@ -2626,6 +2626,13 @@ class Application(tk.Frame):
         ])
     builtin.print = old_print
     #proc = subprocess.Popen('esptool.py --chip esp32 --port '+str(self.port_selection.get())+' --baud 115200 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 40m --flash_size detect 0x1000 bootloader.bin  0x10000 '+str(self.firmware_path.get())+' 0x8000 partitions_toky.bin',shell=True, stdout=subprocess.PIPE)
+
+  def updatePorts(self):
+    menu = self.portSelector["menu"]
+    menu.delete(0,'end')
+    options = [port[0] for port in self.serial_ports()]
+    for string in options:
+        menu.add_command(label=string)
 
   def createWidgets(self):
     self.firmware_type = tk.IntVar()

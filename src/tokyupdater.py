@@ -2561,9 +2561,9 @@ class Application(tk.Frame):
     self.createWidgets()
 
   def check_can_update(self):
-    bootloader_bin_exists = os.path.isfile("bootloader.bin")
-    partitions_bin_exists = os.path.isfile("partitions_toky.bin")
-    toky_firmware_exists = os.path.isfile("TokyMaker.bin")
+    bootloader_bin_exists = os.path.isfile("/tmp/bootloader.bin")
+    partitions_bin_exists = os.path.isfile("/tmp/partitions_toky.bin")
+    toky_firmware_exists = os.path.isfile("/tmp/TokyMaker.bin")
     return bootloader_bin_exists and partitions_bin_exists and toky_firmware_exists
 
   def serial_ports(self):

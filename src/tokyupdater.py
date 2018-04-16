@@ -2547,6 +2547,11 @@ import subprocess
 
 import string
 
+import requests
+os.environ['REQUESTS_CA_BUNDLE'] = "certifi/cacert.pem"
+import certifi
+print(str(certifi.where()))
+
 class Application(tk.Frame):
   def __init__(self, master=None):
     tk.Frame.__init__(self, master)
@@ -2568,24 +2573,21 @@ class Application(tk.Frame):
     self.download_text.set("Downloading "+str(target)+" from server...")
     self.download_progress.set(0)
     try:
-        u = urlopen("https://create.tokylabs.com/getfirmware/"+str(version)+"/"+str(target))
-        f = open(os.path.join("/tmp",target), 'wb')
-        meta = u.info()
-        try:
-            file_size = int(meta.getheaders("Content-Length")[0])
-        except Exception:
-            file_size = int(meta.get_all("Content-Length")[0])
+        r = requests.get("https://create.tokylabs.com/getfirmware/"+str(version)+"/"+str(target), stream=True, verify=False)
+
+        file_size = int(r.headers["Content-Length"])
         self.download_target = file_size
         file_size_dl = 0
-        block_sz = 1000
-        while True:
-            buffer = u.read(block_sz)
-            if not buffer:
-              break
-            file_size_dl += len(buffer)
-            self.download_progress.set(int(file_size_dl * 100. / file_size))
-            f.write(buffer)
-            self.update()
+        block_sz = 1024
+
+        with open(os.path.join("/tmp",target), 'wb') as f:
+            for chunk in r.iter_content(chunk_size=1024):
+                if chunk:
+                    f.write(chunk)
+                    file_size_dl += 1024
+                    self.download_progress.set(int(file_size_dl * 100. / file_size))
+                    self.update()
+
         f.close()
         if self.check_can_update():
           self.executeButton.configure(state = 'normal')

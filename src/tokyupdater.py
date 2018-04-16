@@ -2567,29 +2567,34 @@ class Application(tk.Frame):
   def downloadFile(self, version, target):
     self.download_text.set("Downloading "+str(target)+" from server...")
     self.download_progress.set(0)
-    u = urlopen("https://create.tokylabs.com/getfirmware/"+str(version)+"/"+str(target))
-    f = open(target, 'wb')
-    meta = u.info()
     try:
-        file_size = int(meta.getheaders("Content-Length")[0])
-    except Exception:
-        file_size = int(meta.get_all("Content-Length")[0])
-    self.download_target = file_size
-    file_size_dl = 0
-    block_sz = 1000
-    while True:
-        buffer = u.read(block_sz)
-        if not buffer:
-          break
-        file_size_dl += len(buffer)
-        self.download_progress.set(int(file_size_dl * 100. / file_size))
-        f.write(buffer)
+        u = urlopen("https://create.tokylabs.com/getfirmware/"+str(version)+"/"+str(target))
+        f = open(os.path.join("/tmp",target), 'wb')
+        meta = u.info()
+        try:
+            file_size = int(meta.getheaders("Content-Length")[0])
+        except Exception:
+            file_size = int(meta.get_all("Content-Length")[0])
+        self.download_target = file_size
+        file_size_dl = 0
+        block_sz = 1000
+        while True:
+            buffer = u.read(block_sz)
+            if not buffer:
+              break
+            file_size_dl += len(buffer)
+            self.download_progress.set(int(file_size_dl * 100. / file_size))
+            f.write(buffer)
+            self.update()
+        f.close()
+        if self.check_can_update():
+          self.executeButton.configure(state = 'normal')
+        else:
+          self.executeButton.configure(state = 'disabled')
+    except Exception as e:
+        self.download_text.set("Got error: "+str(e))
         self.update()
-    f.close()
-    if self.check_can_update():
-      self.executeButton.configure(state = 'normal')
-    else:
-      self.executeButton.configure(state = 'disabled')
+        raise Exception
     self.update()
 
   def downloadLatestFirmware(self):
@@ -2622,7 +2627,7 @@ class Application(tk.Frame):
         '--after','hard_reset','write_flash','-z',
         '--flash_mode','dio',
         '--flash_freq','40m',
-        '--flash_size','detect','0x1000','bootloader.bin','0x10000',str(self.firmware_path.get()),'0x8000','partitions_toky.bin'
+        '--flash_size','detect','0x1000','/tmp/bootloader.bin','0x10000',str(self.firmware_path.get()),'0x8000','/tmp/partitions_toky.bin'
         ])
     builtin.print = old_print
     #proc = subprocess.Popen('esptool.py --chip esp32 --port '+str(self.port_selection.get())+' --baud 115200 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 40m --flash_size detect 0x1000 bootloader.bin  0x10000 '+str(self.firmware_path.get())+' 0x8000 partitions_toky.bin',shell=True, stdout=subprocess.PIPE)
@@ -2644,7 +2649,7 @@ class Application(tk.Frame):
     self.firmware_status = tk.StringVar()
     self.can_execute.set('normal' if self.check_can_update() else 'disabled')
     self.firmware_path = tk.StringVar()
-    self.firmware_path.set('TokyMaker.bin')
+    self.firmware_path.set('/tmp/TokyMaker.bin')
     self.port_selection = tk.StringVar()
     self.port_options = [port[0] for port in self.serial_ports()]
 

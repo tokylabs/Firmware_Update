@@ -2576,7 +2576,7 @@ class Application(tk.Frame):
     try:
         s = "https://create.tokylabs.com/getfirmware/"+str(version)+"/"+str(target)
         print("Accessing"+str(s))
-        r = requests.get(s, stream=True, verify=False)
+        r = requests.get(s, stream=True)
 
         file_size = int(r.headers["Content-Length"])
         self.download_target = file_size

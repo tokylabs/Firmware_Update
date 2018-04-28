@@ -7,7 +7,7 @@ test_python:
 build_python:
 	rm -rf ./dist 
 	rm -rf ./src/dist/
-	pyinstaller ./src/tokyupdater.spec --workpath ./build --distpath ./dist --hidden-import pyserial
+	pyinstaller --noconsole ./src/tokyupdater.spec --workpath ./build --distpath ./dist --hidden-import pyserial
 	cp -R ./dist/tokyupdater/ ./src/dist/tokyupdater.app/Contents/MacOS/
 
 test_binary:

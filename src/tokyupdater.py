@@ -2548,6 +2548,7 @@ import subprocess
 import string
 
 import requests
+import tempfile
 os.environ['REQUESTS_CA_BUNDLE'] = "certifi/cacert.pem"
 import certifi
 print(str(certifi.where()))
@@ -2561,16 +2562,16 @@ class Application(tk.Frame):
     self.createWidgets()
 
   def check_can_update(self):
-    bootloader_bin_exists = os.path.isfile("/tmp/bootloader.bin")
-    partitions_bin_exists = os.path.isfile("/tmp/partitions_toky.bin")
-    toky_firmware_exists = os.path.isfile("/tmp/TokyMaker.bin")
+    bootloader_bin_exists = os.path.isfile(os.path.join(self.tempdir, "bootloader.bin"))
+    partitions_bin_exists = os.path.isfile(os.path.join(self.tempdir, "partitions_toky.bin"))
+    toky_firmware_exists = os.path.isfile(os.path.join(self.tempdir, "TokyMaker.bin"))
     return bootloader_bin_exists and partitions_bin_exists and toky_firmware_exists
 
   def serial_ports(self):
     return serial.tools.list_ports.comports()
 
   def downloadFile(self, version, target):
-    self.download_text.set("Downloading "+str(target)+" from server...")
+    self.download_text.set("Downloading "+str(target)+" from server to "+str(os.path.join(self.tempdir,target)))
     self.download_progress.set(0)
     try:
         s = "https://create.tokylabs.com/getfirmware/"+str(version)+"/"+str(target)
@@ -2582,7 +2583,7 @@ class Application(tk.Frame):
         file_size_dl = 0
         block_sz = 1024
 
-        with open(os.path.join("/tmp",target), 'wb') as f:
+        with open(os.path.join(self.tempdir,target), 'wb') as f:
             for chunk in r.iter_content(chunk_size=1024):
                 if chunk:
                     f.write(chunk)
@@ -2639,7 +2640,7 @@ class Application(tk.Frame):
         '--after','hard_reset','write_flash','-z',
         '--flash_mode','dio',
         '--flash_freq','40m',
-        '--flash_size','detect','0x1000','/tmp/bootloader.bin','0x10000',str(self.firmware_path.get()),'0x8000','/tmp/partitions_toky.bin'
+        '--flash_size','detect','0x1000',os.path.join(self.tempdir, 'bootloader.bin'),'0x10000',str(self.firmware_path.get()),'0x8000',os.path.join(tempfile.gettempdir(), 'partitions_toky.bin')
         ])
     builtin.print = old_print
     #proc = subprocess.Popen('esptool.py --chip esp32 --port '+str(self.port_selection.get())+' --baud 115200 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 40m --flash_size detect 0x1000 bootloader.bin  0x10000 '+str(self.firmware_path.get())+' 0x8000 partitions_toky.bin',shell=True, stdout=subprocess.PIPE)
@@ -2650,6 +2651,7 @@ class Application(tk.Frame):
     self.portSelector['values'] = self.port_options
 
   def createWidgets(self):
+    self.tempdir = tempfile.gettempdir()
     self.firmware_type = tk.IntVar()
     self.firmware_type.set(1)
     self.download_text = tk.StringVar()
@@ -2659,7 +2661,7 @@ class Application(tk.Frame):
     self.firmware_status = tk.StringVar()
     self.can_execute.set('normal' if self.check_can_update() else 'disabled')
     self.firmware_path = tk.StringVar()
-    self.firmware_path.set('/tmp/TokyMaker.bin')
+    self.firmware_path.set(os.path.join(self.tempdir,'TokyMaker.bin'))
     self.port_selection = tk.StringVar()
     self.port_options = [port[0] for port in self.serial_ports()]
 

@@ -2573,7 +2573,9 @@ class Application(tk.Frame):
     self.download_text.set("Downloading "+str(target)+" from server...")
     self.download_progress.set(0)
     try:
-        r = requests.get("https://create.tokylabs.com/getfirmware/"+str(version)+"/"+str(target), stream=True, verify=False)
+        s = "https://create.tokylabs.com/getfirmware/"+str(version)+"/"+str(target)
+        print("Accessing"+str(s))
+        r = requests.get(s, stream=True, verify=False)
 
         file_size = int(r.headers["Content-Length"])
         self.download_target = file_size
@@ -2610,17 +2612,25 @@ class Application(tk.Frame):
   def openFirmwareFile(self):
     self.firmware_path.set(fdialog.askopenfilename(title="Choose firmware file", filetypes=[("Firmware Binary",("*.bin","*.txt"))]))
     self.update()
-  
+
+  def eraseFlash(self):
+    main([
+        '--chip','esp32',
+        '--port',str(self.port_selection.get()),
+        '--baud','115200',
+        '--before','default_reset',
+        '--after','hard_reset','erase_flash'
+    ]) 
+
   def flashFirmware(self):
-    #print('esptool.py --chip esp32 --port '+str(self.port_selection.get())+' --baud 115200 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 40m --flash_size detect 0x1000 bootloader.bin  0x10000 '+str(self.firmware_path.get())+' 0x8000 partitions_toky.bin')
     old_print = builtin.print
-    app = self
     def print(*args, **kwargs):
         f = string.Formatter()
-        app.firmware_status.set(f.format(*args,**kwargs))
-        app.update()
+        self.firmware_status.set(f.format(*args,**kwargs))
+        self.update()
         old_print(*args, **kwargs)
     builtin.print = print
+    self.eraseFlash()
     main([
         '--chip','esp32',
         '--port',str(self.port_selection.get()),
@@ -2635,11 +2645,9 @@ class Application(tk.Frame):
     #proc = subprocess.Popen('esptool.py --chip esp32 --port '+str(self.port_selection.get())+' --baud 115200 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 40m --flash_size detect 0x1000 bootloader.bin  0x10000 '+str(self.firmware_path.get())+' 0x8000 partitions_toky.bin',shell=True, stdout=subprocess.PIPE)
 
   def updatePorts(self):
-    menu = self.portSelector["menu"]
-    menu.delete(0,'end')
-    options = [port[0] for port in self.serial_ports()]
-    for string in options:
-        menu.add_command(label=string)
+    print("Updating ports")
+    self.port_options = [port[0] for port in self.serial_ports()]
+    self.portSelector['values'] = self.port_options
 
   def createWidgets(self):
     self.firmware_type = tk.IntVar()
@@ -2676,7 +2684,9 @@ class Application(tk.Frame):
 
     self.selectPortLabel = tk.Label(self, text="Select Target Port:")
     self.selectPortLabel.grid(row=5,column=0,sticky='E')
-    self.portSelector = tk.OptionMenu(self,self.port_selection, None, *self.port_options)
+    #self.portSelector = tk.OptionMenu(self,self.port_selection, None, *self.port_options, command=self.updatePorts)
+    self.portSelector = ttk.Combobox(self, textvariable=self.port_selection, values=self.port_options, state='readonly', postcommand=self.updatePorts)
+    self.portSelector.config(width=20)
     self.portSelector.grid(row=5,column=1)
 
     self.executeButton = tk.Button(self, text='Flash Firmware To Device', state='disabled', command=self.flashFirmware)

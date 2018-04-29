@@ -2549,7 +2549,7 @@ import string
 
 import requests
 import tempfile
-os.environ['REQUESTS_CA_BUNDLE'] = "certifi/cacert.pem"
+#os.environ['REQUESTS_CA_BUNDLE'] = "certifi/cacert.pem"
 import certifi
 print(str(certifi.where()))
 
